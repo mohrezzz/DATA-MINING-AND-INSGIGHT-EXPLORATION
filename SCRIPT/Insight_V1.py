@@ -15,8 +15,10 @@ import matplotlib.pyplot as plt
 path = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES'
 os.chdir(path)
 hosue_df = pd.read_csv(os.path.join('DATASET', 'Al-Muzahmiyya.csv'))
-
-hosue_df.corr()
+hosue_df['last_updated'] = pd.to_datetime(hosue_df.last_updated)
+hosue_df.set_index('last_updated', inplace = True)
+hosue_df.sort_values(by = 'last_updated', inplace = True)
+#sort the data
 print('See data descroiption: {}'.format(hosue_df.describe()))
 print('Skew of data: {}'.format(hosue_df.skew()))
 print('Kurt of data: {}'.format(hosue_df.kurt()))
@@ -28,7 +30,7 @@ def standardize_houseprize(df, standardize = None,
                            logg = None, normalize = None):
   df = df.copy(deep = True)
   #drop all objects
-  #leaving float and int datatypes
+  #and leaving all float64 and int64 datatypes
   for ii in hosue_df.columns:
     if hosue_df[ii].dtype == object:
       df = df.drop(ii, axis = 1)
@@ -101,18 +103,24 @@ log_data.plot(kind='box')
 #data exploration
 color = ['red', 'green', 'brown', 'black', 'blue', 'indigo']
 fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, sharex= True)
-ax1.scatter(np.arange(log_data.shape[0]), log_data.price.values, s = .5, color = color[1], label='Price')
+ax1.scatter(log_data.index, log_data.price.values, s = .5, color = color[1], label='Price')
 ax1.legend()
-ax2.scatter(np.arange(log_data.shape[0]), log_data.meter_price.values, s = .5, color = color[2], label='meter_price')
+ax2.scatter(log_data.index, log_data.meter_price.values, s = .5, color = color[2], label='meter_price')
 ax2.legend()
-ax3.scatter(np.arange(log_data.shape[0]), log_data.area.values, s = .5, color = color[3], label='area')
+ax3.scatter(log_data.index, log_data.area.values, s = .5, color = color[3], label='area')
 ax3.legend()
-ax4.scatter(np.arange(log_data.shape[0]), log_data.wc.values, s = .5, color = color[4], label='wc')
+ax4.scatter(log_data.index, log_data.wc.values, s = .5, color = color[4], label='wc')
 ax4.legend()
-ax5.scatter(np.arange(log_data.shape[0]), log_data.street_width.values, s = .5, color = color[5], label='street_width')
+ax5.scatter(log_data.index, log_data.street_width.values, s = .5, color = color[5], label='street_width')
 ax5.legend()
 
 
+sns.lmplot('area', 'price', log_data)
+
+#create syntetic variables
+
+def moving_av():
+  pass
 
 
 

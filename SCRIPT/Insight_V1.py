@@ -72,7 +72,8 @@ def standardize_houseprize(df, standardize = None,
     df = df.replace([np.inf, -np.inf, np.nan], 0)
   elif normalize:
     for ii, ij in enumerate(df.columns):
-      df['{}'.format(ij)] = (df.loc[:, '{}'.format(ij)] - min(df.loc[:, '{}'.format(ij)]))/(max(df.loc[:, '{}'.format(ij)]) - min(df.loc[:, '{}'.format(ij)]))
+      df['{}'.format(ij)] = (df.loc[:, '{}'.format(ij)] - min(df.loc[:, '{}'.format(ij)]))/\
+      (max(df.loc[:, '{}'.format(ij)]) - min(df.loc[:, '{}'.format(ij)]))
   else:
     pass
     
@@ -83,7 +84,16 @@ df_standard = standardize_houseprize(hosue_df.iloc[:, 1:], standardize = True)
 log_data = standardize_houseprize(hosue_df.iloc[:, 1:], logg=True)
 df_normal = standardize_houseprize(hosue_df.iloc[:, 1:], normalize = True)
 
+
+#%% Dealing withh outliers
+log_data.describe()
+#plot log_price
+after_outl = log_data[(log_data.price < 20.0) & (log_data.price > 2.5)]
+plt.scatter(np.arange(after_outl.shape[0]), after_outl.price, s = .5)
+plt.axhline(y = 20, linewidth=1, color='r')
+plt.axhline(y = 2.5, linewidth=1, color='r')
 #%% plots and correlation
+
 df_standard.hist()
 log_data.hist()
 df_normal.hist()
@@ -100,6 +110,8 @@ sns.heatmap(log_data.corr(), annot=True);plt.show()
 sns.heatmap(df_normal.corr(), annot=True);plt.show()
 #box plot
 log_data.plot(kind='box')
+df.groupby('price').mean().plot()
+plt.title('Plot of features against price')
 #data exploration
 color = ['red', 'green', 'brown', 'black', 'blue', 'indigo']
 fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, sharex= True)
@@ -114,20 +126,47 @@ ax4.legend()
 ax5.scatter(log_data.index, log_data.street_width.values, s = .5, color = color[5], label='street_width')
 ax5.legend()
 
-
+#regression line
 sns.lmplot('area', 'price', log_data)
 
+#%%
 #create syntetic variables
+def moving_av(df, n):
+  '''
+  :params
+    :df: feature, can be price, area or any numerical value 
+    :n: period we want to check price
+  '''
+  return pd.DataFrame({'MA_'+str(n): df.rolling(n).mean()})
 
-def moving_av():
-  pass
+def expmoving_av(df, n):
+  '''
+  :params
+    :df: feature, can be price, area or any numerical value 
+    :n: period we want to check price
+  '''
+  return pd.DataFrame({'MA_'+str(n): df.ewm(n).mean()})
 
 
+ma = moving_av(df.price, 2)
+ema = expmoving_av(df.price, 2)
+
+ma_log = moving_av(df.price, 2)
+
+sns.lmplot('area', 'price', df)
+plt.scatter(df.iloc[:, [3]], df.iloc[:, [0]], s = .5)
 
 
+#%% Feature engineering/ selection
 
+from xgboost import XGBRegressor
+from xgboost import plot_importance
 
-
+def plot_features(booster, figsize):    
+    fig, ax = plt.subplots(1,1,figsize=figsize)
+    return plot_importance(booster=booster, ax=ax)
+  
+ 
 
 
 

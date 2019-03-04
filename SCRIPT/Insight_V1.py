@@ -162,7 +162,7 @@ plt.scatter(df.iloc[:, [3]], df.iloc[:, [0]], s = .5)
 
 
 #%% DEALING WITH OUTLIERS
-def remove_outliers(df, standardize = None, remove_objects = None,
+def remove_outliers(df, standardize = None, remove_objects = True,
                     logg = None, normalize = None, 
                     lower_quartile = None, upper_quartile = None, multiplier = None):
   
@@ -232,7 +232,6 @@ df_no_out = remove_outliers(hosue_df, remove_objects = True, lower_quartile = lo
 df_standard_no_out = remove_outliers(hosue_df, remove_objects = True, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 log_data_no_out = remove_outliers(hosue_df, remove_objects = True, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 df_normal_no_out = remove_outliers(hosue_df, remove_objects = True, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-df_dummy = pd.get_dummies(hosue_df, dtype = float)
 
 plt.scatter(np.arange(df_no_out.shape[0]), df_no_out.price, s = 1.5)
 sns.lmplot('area', 'price', df_no_out)
@@ -263,7 +262,6 @@ def plotit(df):
       plt.ylabel('Price')
       plt.xlabel('features')
       plt.title('Price against other numerical variables')
-      
 plotit(log_data)
 
 #%% Feature engineering/ selection
@@ -275,9 +273,49 @@ def plot_features():
   fig, ax = plt.subplots(1, 1, figsize = figsize)
   return plot_importance()
 
-#standardize df_dummy
-df_dum_stand = remove_outliers(df_dummy, remove_objects = False, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+def categorical_handler(df, standardize = None, remove_objects = True,
+                    logg = None, normalize = None, 
+                    lower_quartile = None, upper_quartile = None, multiplier = None):
+  df_dum = hosue_df.copy(deep = True)
+  df_dum = pd.get_dummies(df_dum)
+  quart_1 = df_dum.quantile(lower_quart)
+  quart_2 = df_dum.quantile(upper_quart)
+  diff_quart = quart_2 - quart_1
+  df_dum = df_dum[~((df_dum < (quart_1 - 1.5 * diff_quart)) | (df_dum > (quart_2 + 1.5 * diff_quart))).any(axis=1)]
+  #standard deviation
+  def stdev(df):
+    return np.std(df, axis = 0)
+  #mean deviation
+  def mean_dev(df):
+    return df - np.mean(df, axis = 0)
+  #log of data
+  def logg_dat(df):
+    return np.log(df)
+  
+  #standardized values for columns
+  if standardize:
+    for ii, ij in enumerate(df.columns):
+      print(ii, ij)
+      df['{}'.format(ij)] = mean_dev(df.loc[:, '{}'.format(ij)])/stdev(df.loc[:, '{}'.format(ij)])
+      df = df.replace([np.inf, -np.inf, np.nan], 0)
+  elif logg:
+    df = logg_dat(df)
+    df = df.replace([np.inf, -np.inf, np.nan], 0)
+  elif normalize:
+    for ii, ij in enumerate(df.columns):
+      df['{}'.format(ij)] = (df.loc[:, '{}'.format(ij)] - min(df.loc[:, '{}'.format(ij)]))/\
+      (max(df.loc[:, '{}'.format(ij)]) - min(df.loc[:, '{}'.format(ij)]))
+      df = df.replace([np.inf, -np.inf, np.nan], 0)
+  else:
+    pass
+  
+  
+  return df
 
+#get the standard catefgorical variable
+df_cat_stan = categorical_handler(hosue_df, standardize = True, lower_quartile = lower_quart, \
+                             upper_quartile = upper_quart, multiplier = multiplier)
+#standardize df_dummy
 
 
 

@@ -17,6 +17,8 @@ path = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES'
 os.chdir(path)
 hosue_df = pd.read_csv(os.path.join('DATASET', 'Al-Muzahmiyya.csv'))
 hosue_df['last_updated'] = pd.to_datetime(hosue_df.last_updated)
+hosue_df = hosue_df.iloc[:, 1:]
+hosue_df = hosue_df.drop(['created_at', 'address'], axis = 1)
 hosue_df.set_index('last_updated', inplace = True)
 hosue_df.sort_values(by = 'last_updated', inplace = True)
 #sort the data
@@ -80,10 +82,10 @@ def standardize_houseprize(df, standardize = None,
     
   return df
 
-df = standardize_houseprize(hosue_df.iloc[:, 1:])
-df_standard = standardize_houseprize(hosue_df.iloc[:, 1:], standardize = True)
-log_data = standardize_houseprize(hosue_df.iloc[:, 1:], logg=True)
-df_normal = standardize_houseprize(hosue_df.iloc[:, 1:], normalize = True)
+df = standardize_houseprize(hosue_df)
+df_standard = standardize_houseprize(hosue_df, standardize = True)
+log_data = standardize_houseprize(hosue_df, logg=True)
+df_normal = standardize_houseprize(hosue_df, normalize = True)
 
 #%% Dealing withh outliers
 log_data.describe()
@@ -155,7 +157,7 @@ ema = expmoving_av(df.price, 2)
 
 ma_log = moving_av(df.price, 2)
 
-sns.lmplot('area', 'price', df)
+sns.lmplot('area', 'price', log_data)
 plt.scatter(df.iloc[:, [3]], df.iloc[:, [0]], s = .5)
 
 
@@ -221,16 +223,16 @@ def remove_outliers(df, standardize = None,
 lower_quart = .25
 upper_quart = .75
 multiplier = 1.5
-df_no_out = remove_outliers(hosue_df.iloc[:, 1:], lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-df_standard_no_out = remove_outliers(hosue_df.iloc[:, 1:], standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-log_data_no_out = remove_outliers(hosue_df.iloc[:, 1:], logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-df_normal_no_out = remove_outliers(hosue_df.iloc[:, 1:], normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_no_out = remove_outliers(hosue_df, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_standard_no_out = remove_outliers(hosue_df, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+log_data_no_out = remove_outliers(hosue_df, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_normal_no_out = remove_outliers(hosue_df, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 
 
 plt.scatter(np.arange(df_no_out.shape[0]), df_no_out.price, s = 1.5)
 sns.lmplot('area', 'price', df_no_out)
 
-#%% plots
+#%% plots with and without outliers
 #plot log_price
 rcParams['figure.figsize'] = 20, 14
 plt.scatter(np.arange(log_data_no_out.shape[0]), log_data_no_out.price, s = 2.5)
@@ -246,23 +248,19 @@ plt.axhline(y = 20, linewidth=1, color='r')
 plt.axhline(y = 2.5, linewidth=1, color='r')
 plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
 
-#%% plotting without outliers
-#plot log_price
-rcParams['figure.figsize'] = 20, 14
-plt.scatter(np.arange(log_data_no_out.shape[0]), log_data_no_out.price, s = 2.5)
-plt.title('Plot of count against price on a log scale without outliers')
-plt.axhline(y = 20, linewidth=1, color='r')
-plt.axhline(y = 2.5, linewidth=1, color='r')
-plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
+#%% plot price with all other numeric features
 
-##plot log_price  using price range
-plt.scatter(np.arange(after_outl.shape[0]), after_outl.price, s = 2.5)
-plt.title('Plot of count against price on a log scale with outliers')
-plt.axhline(y = 20, linewidth=1, color='r')
-plt.axhline(y = 2.5, linewidth=1, color='r')
-plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
+def plotit(df):
+  if 'price' in df.columns:
+    for ii in df.columns[1:]:
+      plt.scatter(df['price'], df[ii], cmap='Sequential', s = 2.5)
+      plt.legend()
+      plt.ylabel('Price')
+      plt.xlabel('features')
+      plt.title('Price against other numerical variables')
+      
+plotit(log_data)
 
-sns.lmplot('area', 'price', after_outl)
 #%% Feature engineering/ selection
 
 from xgboost import XGBRegressor
@@ -271,12 +269,8 @@ from xgboost import plot_importance
 def plot_features():
   fig, ax = plt.subplots(1, 1, figsize = figsize)
   return plot_importance()
-def plot_features(booster, figsize):
-   
-    fig, ax = plt.subplots(1,1,figsize=figsize)
-    return plot_importance(booster=booster, ax=ax)
-  
- 
+
+
 
 
 

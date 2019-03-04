@@ -227,7 +227,7 @@ df_no_out = remove_outliers(hosue_df, lower_quartile = lower_quart, upper_quarti
 df_standard_no_out = remove_outliers(hosue_df, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 log_data_no_out = remove_outliers(hosue_df, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 df_normal_no_out = remove_outliers(hosue_df, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-
+df_dummy = pd.get_dummies(hosue_df)
 
 plt.scatter(np.arange(df_no_out.shape[0]), df_no_out.price, s = 1.5)
 sns.lmplot('area', 'price', df_no_out)

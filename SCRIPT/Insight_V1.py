@@ -162,15 +162,18 @@ plt.scatter(df.iloc[:, [3]], df.iloc[:, [0]], s = .5)
 
 
 #%% DEALING WITH OUTLIERS
-def remove_outliers(df, standardize = None, 
+def remove_outliers(df, standardize = None, remove_objects = None,
                     logg = None, normalize = None, 
                     lower_quartile = None, upper_quartile = None, multiplier = None):
   
   #drop all objects
   #and leaving all float64 and int64 datatypes
-  for ii in hosue_df.columns:
-    if hosue_df[ii].dtype == object:
-      df = df.drop(ii, axis = 1)
+  if remove_objects:
+    for ii in hosue_df.columns:
+      if hosue_df[ii].dtype == object:
+        df = df.drop(ii, axis = 1)
+  else:
+    pass
   
   df = df.copy(deep = True)
   quart_1 = df.quantile(lower_quartile)
@@ -208,6 +211,7 @@ def remove_outliers(df, standardize = None,
     for ii, ij in enumerate(df.columns):
       print(ii, ij)
       df['{}'.format(ij)] = mean_dev(df.loc[:, '{}'.format(ij)])/stdev(df.loc[:, '{}'.format(ij)])
+      df = df.replace([np.inf, -np.inf, np.nan], 0)
   elif logg:
     df = logg_dat(df)
     df = df.replace([np.inf, -np.inf, np.nan], 0)
@@ -215,6 +219,7 @@ def remove_outliers(df, standardize = None,
     for ii, ij in enumerate(df.columns):
       df['{}'.format(ij)] = (df.loc[:, '{}'.format(ij)] - min(df.loc[:, '{}'.format(ij)]))/\
       (max(df.loc[:, '{}'.format(ij)]) - min(df.loc[:, '{}'.format(ij)]))
+      df = df.replace([np.inf, -np.inf, np.nan], 0)
   else:
     pass
     
@@ -223,11 +228,11 @@ def remove_outliers(df, standardize = None,
 lower_quart = .25
 upper_quart = .75
 multiplier = 1.5
-df_no_out = remove_outliers(hosue_df, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-df_standard_no_out = remove_outliers(hosue_df, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-log_data_no_out = remove_outliers(hosue_df, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-df_normal_no_out = remove_outliers(hosue_df, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
-df_dummy = pd.get_dummies(hosue_df)
+df_no_out = remove_outliers(hosue_df, remove_objects = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_standard_no_out = remove_outliers(hosue_df, remove_objects = True, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+log_data_no_out = remove_outliers(hosue_df, remove_objects = True, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_normal_no_out = remove_outliers(hosue_df, remove_objects = True, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_dummy = pd.get_dummies(hosue_df, dtype = float)
 
 plt.scatter(np.arange(df_no_out.shape[0]), df_no_out.price, s = 1.5)
 sns.lmplot('area', 'price', df_no_out)
@@ -270,7 +275,8 @@ def plot_features():
   fig, ax = plt.subplots(1, 1, figsize = figsize)
   return plot_importance()
 
-
+#standardize df_dummy
+df_dum_stand = remove_outliers(df_dummy, remove_objects = False, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 
 
 

@@ -11,6 +11,8 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pylab import rcParams
+#stop runtime error
+np.seterr(divide='ignore', invalid='ignore')
 rcParams['figure.figsize'] = 20, 25
 
 path = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES'
@@ -34,8 +36,8 @@ def standardize_houseprize(df, standardize = None,
   df = df.copy(deep = True)
   #drop all objects
   #and leaving all float64 and int64 datatypes
-  for ii in hosue_df.columns:
-    if hosue_df[ii].dtype == object:
+  for ii in df.columns:
+    if df[ii].dtype == object:
       df = df.drop(ii, axis = 1)
   
   '''
@@ -101,7 +103,9 @@ plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
 df_standard.hist()
 log_data.hist()
 df_normal.hist()
-df.hist()
+
+
+#%% 
 sns.violinplot(df_standard)
 sns.pairplot(df_standard)
 sns.pairplot(log_data)
@@ -112,10 +116,13 @@ sns.heatmap(df_normal)
 sns.heatmap(df_standard.corr(), annot=True);plt.show()
 sns.heatmap(log_data.corr(), annot=True);plt.show()
 sns.heatmap(df_normal.corr(), annot=True);plt.show()
+
+#%%
 #box plot
 log_data.plot(kind='box')
+plt.title('log data contaning outliers')
 log_data.groupby('price').mean().plot()
-plt.title('Plot of features against price')
+plt.title('line chart of features against price')
 #data exploration
 color = ['red', 'green', 'brown', 'black', 'blue', 'indigo']
 fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, sharex= True)
@@ -131,7 +138,7 @@ ax5.scatter(log_data.index, log_data.street_width.values, s = .5, color = color[
 ax5.legend()
 
 #regression line
-sns.lmplot('area', 'price', df)
+sns.lmplot('street_width', 'price', log_data)
 
 #%%
 #create syntetic variables
@@ -169,16 +176,19 @@ def remove_outliers(df, standardize = None, remove_objects = True,
   #drop all objects
   #and leaving all float64 and int64 datatypes
   if remove_objects:
-    for ii in hosue_df.columns:
-      if hosue_df[ii].dtype == object:
+    for ii in df.columns:
+      if df[ii].dtype == object:
         df = df.drop(ii, axis = 1)
   else:
-    pass
-  
+    df = df
+    dum = pd.get_dummies(df, dtype = float)
+    
+    
+    
   df = df.copy(deep = True)
   quart_1 = df.quantile(lower_quartile)
   quart_2 = df.quantile(upper_quartile)
-  diff_quart = quart_2 - quart_1
+  diff_quart = abs(quart_1 - quart_2)
   df = df[~((df < (quart_1 - 1.5 * diff_quart)) | (df > (quart_2 + 1.5 * diff_quart))).any(axis=1)]
   '''
   #standardize values
@@ -225,6 +235,7 @@ def remove_outliers(df, standardize = None, remove_objects = True,
     
   return df
 
+
 lower_quart = .25
 upper_quart = .75
 multiplier = 1.5
@@ -232,6 +243,7 @@ df_no_out = remove_outliers(hosue_df, remove_objects = True, lower_quartile = lo
 df_standard_no_out = remove_outliers(hosue_df, remove_objects = True, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 log_data_no_out = remove_outliers(hosue_df, remove_objects = True, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 df_normal_no_out = remove_outliers(hosue_df, remove_objects = True, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+#df_dum_dum = remove_outliers(hosue_df, remove_objects = False, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 
 plt.scatter(np.arange(df_no_out.shape[0]), df_no_out.price, s = 1.5)
 sns.lmplot('area', 'price', df_no_out)
@@ -262,26 +274,72 @@ def plotit(df):
       plt.ylabel('Price')
       plt.xlabel('features')
       plt.title('Price against other numerical variables')
-plotit(log_data)
+plotit(log_data_no_out)
 
 #%% Feature engineering/ selection
-
+from scipy import stats
 from xgboost import XGBRegressor
 from xgboost import plot_importance
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 
+#plot feature importance
 def plot_features():
   fig, ax = plt.subplots(1, 1, figsize = figsize)
   return plot_importance()
+
 
 def categorical_handler(df, standardize = None, remove_objects = True,
                     logg = None, normalize = None, 
                     lower_quartile = None, upper_quartile = None, multiplier = None):
   df_dum = hosue_df.copy(deep = True)
-  df_dum = pd.get_dummies(df_dum)
-  quart_1 = df_dum.quantile(lower_quart)
-  quart_2 = df_dum.quantile(upper_quart)
-  diff_quart = quart_2 - quart_1
-  df_dum = df_dum[~((df_dum < (quart_1 - 1.5 * diff_quart)) | (df_dum > (quart_2 + 1.5 * diff_quart))).any(axis=1)]
+  df_num = hosue_df.copy(deep = True)
+  #seperate numerical variables
+  for ii in df_num.columns:
+    if df_num[ii].dtypes == object:
+      df_num = df_num.drop(ii, axis = 1)
+  #seperate categories
+  for ii in df_dum.columns:
+    if df_dum[ii].dtypes != object:
+      df_dum = df_dum.drop(ii, axis = 1)
+  
+  
+  
+  quart_1 = df_num.quantile(lower_quart)
+  quart_2 = df_num.quantile(upper_quart)
+  diff_quart = abs(quart_1 - quart_2)
+  df_num = df_num[~((df_num < (quart_1 - 1.5 * diff_quart)) | (df_num > (quart_2 + 1.5 * diff_quart))).any(axis=1)]
+  
+  df_dum = pd.get_dummies(df_dum, dtype = float)
+  #create additional time features
+  df_num['date'] = df_num.index.date
+  df_num['time'] = df_num.index.time
+  df_num['day'] = df_num['date'].map(str) + df_num['time'].map(str)
+  df_dum['date'] = df_dum.index.date
+  df_dum['time'] = df_dum.index.time
+  df_dum['day'] = df_dum['date'].map(str) + df_num['time'].map(str)
+  #concat
+  df = pd.concat([df_num, df_dum], axis = 1)
+  df_new = pd.merge(df_num, df_dum, left_on = df_num.index, right_on = df_dum.index, how = "right")
+  df_new = df_num.merge(df_dum, how = 'right')
+  
+  print(len([x for x in df_dum.index]))
+  print(len([x for x in df_num.index]))
+  print(len([x for x in df_dum.index if x in df_num.index]))
+  df_new = df_dum[[x for x in df_dum.index if x in df_num.index]]
+  for ij in df_dum.index:
+    print(len(ij))
+    for ii in df_num.index:
+      print(ii)
+  
+  for ii in df_dum.index:
+    for ij in df_num.index:
+      if ii == ij:
+        pass
+ 
+  #join both dataframes on index
+  concatt_frame = pd.merge(df_num, df_dum, indicator=True)
+  concatt_frame = pd.concat([df_num, df_dum], axis = 1, join_axes = [df_num.index])
   #standard deviation
   def stdev(df):
     return np.std(df, axis = 0)
@@ -316,12 +374,6 @@ def categorical_handler(df, standardize = None, remove_objects = True,
 df_cat_stan = categorical_handler(hosue_df, standardize = True, lower_quartile = lower_quart, \
                              upper_quartile = upper_quart, multiplier = multiplier)
 #standardize df_dummy
-
-
-
-
-
-
 
 
 

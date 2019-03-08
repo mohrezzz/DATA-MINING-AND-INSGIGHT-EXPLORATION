@@ -23,6 +23,7 @@ hosue_df = hosue_df.iloc[:, 1:]
 hosue_df = hosue_df.drop(['created_at', 'address'], axis = 1)
 hosue_df.set_index('last_updated', inplace = True)
 hosue_df.sort_values(by = 'last_updated', inplace = True)
+hosue_df_catt = pd.get_dummies(hosue_df)
 #sort the data
 print('See data descroiption: {}'.format(hosue_df.describe()))
 print('Skew of data: {}'.format(hosue_df.skew()))
@@ -279,9 +280,12 @@ plotit(df_no_out)
 #%% Feature engineering/ selection
 from scipy import stats
 from xgboost import XGBRegressor
+from xgboost import XGBClassifier
 from xgboost import plot_importance
+from sklearn.cross_validation import StratifiedKFold, KFold
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.grid_search import GridSearchCV
 
 #plot feature importance
 def plot_features():
@@ -355,6 +359,64 @@ df_standard_no_out = categorical_handler(hosue_df, remove_objects = True, standa
 log_data_no_out = categorical_handler(hosue_df, remove_objects = True, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 df_normal_no_out = categorical_handler(hosue_df, remove_objects = True, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 
+#countplot
+pt = sns.countplot(x = 'living_room', data = hosue_df, hue = 'user_type')
+plt.xticks(rotation=30)
+#barplot
+sns.barplot(x="living_room", y = "price", data=hosue_df)
+plt.title('Price Against Living room')
+#%% Analysis and Modeling
+def standize_it(df):
+  
+  def stdev(df):
+    return np.std(df, axis = 0)
+  #mean deviation
+  def mean_dev(df):
+    return df - np.mean(df, axis = 0)
+  #log of data
+  def logg_dat(df):
+    return np.log(df)
+  
+  #standardized values for columns
+  for ii, ij in enumerate(df.columns):
+    print(ii, ij)
+    df['{}'.format(ij)] = mean_dev(df.loc[:, '{}'.format(ij)])/stdev(df.loc[:, '{}'.format(ij)])
+    df = df.replace([np.inf, -np.inf, np.nan], 0)
+    
+  return df
+
+#standardize dataset
+hosue_df_catt_st = standize_it(hosue_df_catt)
+#parameters
+parameters = {'nthread':[4], #when use hyperthread, xgboost may become slower
+              'objective':['binary:logistic'],
+              'learning_rate': [0.05], #so called `eta` value
+              'max_depth': [6],
+              'min_child_weight': [11],
+              'silent': [1],
+              'subsample': [0.8],
+              'colsample_bytree': [0.7],
+              'n_estimators': [5], #number of trees, change it to 1000 for better results
+              'missing':[-999],
+              'seed': [1337]}
+#call XGBoost Model
+model = XGBRegressor()
+df_y = hosue_df_catt_st.price
+df_X = hosue_df_catt_st.iloc[:, 1:]
+
+#perform Gridsearch on dataset
+clf = GridSearchCV(model, parameters, n_jobs=5, 
+                   cv=StratifiedKFold(df_y, n_folds=5, shuffle=True), 
+                   scoring='roc_auc',
+                   verbose=2, refit=True)
+
+model.fit(df_X, df_y)
+
+plot_importance(model)
 
 
-#%% Analysis
+
+
+
+
+

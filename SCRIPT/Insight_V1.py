@@ -274,7 +274,7 @@ def plotit(df):
       plt.ylabel('Price')
       plt.xlabel('features')
       plt.title('Price against other numerical variables')
-plotit(log_data_no_out)
+plotit(df_no_out)
 
 #%% Feature engineering/ selection
 from scipy import stats
@@ -292,8 +292,9 @@ def plot_features():
 def categorical_handler(df, standardize = None, remove_objects = True,
                     logg = None, normalize = None, 
                     lower_quartile = None, upper_quartile = None, multiplier = None):
-  df_dum = hosue_df.copy(deep = True)
-  df_num = hosue_df.copy(deep = True)
+  
+  df_dum = df.copy(deep = True)
+  df_num = df.copy(deep = True)
   #seperate numerical variables
   for ii in df_num.columns:
     if df_num[ii].dtypes == object:
@@ -302,44 +303,20 @@ def categorical_handler(df, standardize = None, remove_objects = True,
   for ii in df_dum.columns:
     if df_dum[ii].dtypes != object:
       df_dum = df_dum.drop(ii, axis = 1)
-  
-  
-  
+  #remove outliers
   quart_1 = df_num.quantile(lower_quart)
   quart_2 = df_num.quantile(upper_quart)
   diff_quart = abs(quart_1 - quart_2)
-  df_num = df_num[~((df_num < (quart_1 - 1.5 * diff_quart)) | (df_num > (quart_2 + 1.5 * diff_quart))).any(axis=1)]
-  
+  df_num = df_num[~((df_num < (quart_1 - multiplier * diff_quart)) | (df_num > (quart_2 + multiplier * diff_quart))).any(axis=1)]
+  #convert categorical variables to numerical var
   df_dum = pd.get_dummies(df_dum, dtype = float)
+  #merge
+  df = pd.merge(df_num.reset_index(drop = True),\
+             df_dum.reset_index(drop = True), left_index=True, right_index=True)
+  
+  df.set_index(df_num.index, inplace = True)
   #create additional time features
-  df_num['date'] = df_num.index.date
-  df_num['time'] = df_num.index.time
-  df_num['day'] = df_num['date'].map(str) + df_num['time'].map(str)
-  df_dum['date'] = df_dum.index.date
-  df_dum['time'] = df_dum.index.time
-  df_dum['day'] = df_dum['date'].map(str) + df_num['time'].map(str)
-  #concat
-  df = pd.concat([df_num, df_dum], axis = 1)
-  df_new = pd.merge(df_num, df_dum, left_on = df_num.index, right_on = df_dum.index, how = "right")
-  df_new = df_num.merge(df_dum, how = 'right')
   
-  print(len([x for x in df_dum.index]))
-  print(len([x for x in df_num.index]))
-  print(len([x for x in df_dum.index if x in df_num.index]))
-  df_new = df_dum[[x for x in df_dum.index if x in df_num.index]]
-  for ij in df_dum.index:
-    print(len(ij))
-    for ii in df_num.index:
-      print(ii)
-  
-  for ii in df_dum.index:
-    for ij in df_num.index:
-      if ii == ij:
-        pass
- 
-  #join both dataframes on index
-  concatt_frame = pd.merge(df_num, df_dum, indicator=True)
-  concatt_frame = pd.concat([df_num, df_dum], axis = 1, join_axes = [df_num.index])
   #standard deviation
   def stdev(df):
     return np.std(df, axis = 0)
@@ -370,12 +347,13 @@ def categorical_handler(df, standardize = None, remove_objects = True,
   
   return df
 
-#get the standard catefgorical variable
-df_cat_stan = categorical_handler(hosue_df, standardize = True, lower_quartile = lower_quart, \
-                             upper_quartile = upper_quart, multiplier = multiplier)
-#standardize df_dummy
-
-
+lower_quart = .25
+upper_quart = .75
+multiplier = 1.5
+df_no_out = categorical_handler(hosue_df, remove_objects = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_standard_no_out = categorical_handler(hosue_df, remove_objects = True, standardize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+log_data_no_out = categorical_handler(hosue_df, remove_objects = True, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
+df_normal_no_out = categorical_handler(hosue_df, remove_objects = True, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 
 
 

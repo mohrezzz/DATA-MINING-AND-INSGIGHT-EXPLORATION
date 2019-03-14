@@ -284,7 +284,6 @@ from xgboost import XGBClassifier
 from xgboost import plot_importance
 from sklearn.cross_validation import StratifiedKFold, KFold
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.grid_search import GridSearchCV
 
 #plot feature importance
@@ -367,8 +366,9 @@ plt.xticks(rotation=30)
 sns.barplot(x="living_room", y = "price", data=hosue_df)
 plt.title('Price Against Living room')
 #%% Analysis and Modeling
+
 def standize_it(df):
-  
+  df = df.copy(deep = True)
   def stdev(df):
     return np.std(df, axis = 0)
   #mean deviation
@@ -383,22 +383,31 @@ def standize_it(df):
     print(ii, ij)
     df['{}'.format(ij)] = mean_dev(df.loc[:, '{}'.format(ij)])/stdev(df.loc[:, '{}'.format(ij)])
     df = df.replace([np.inf, -np.inf, np.nan], 0)
-    
   return df
 
+hosue_df_catt = pd.get_dummies(hosue_df)
 #standardize dataset
 hosue_df_catt_st = standize_it(hosue_df_catt)
 #parameters
 
-#features and targets
-df_y = hosue_df_catt_st.price.values
-df_X = hosue_df_catt_st.iloc[:, 1:]
+def train_test(df, split = None, test_siz = None):
+  if not split:
+    return df.price.values, df.drop(['price'], axis = 1)
+  else:
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, Y_train, Y_test = train_test_split(df.drop(['price'], axis = 1), df.price.values, test_size = test_siz)
+    X_train, X_test = standize_it(X_train), standize_it(X_test)
+    return X_train, X_test, Y_train, Y_test
+
+df_y, df_X = train_test(log_data_no_out)
+
 
 def Grid_Search_CV_RFR(X_train, y_train):
-
+  #model
   model = XGBRegressor()
+  #parameters
   param_grid = { 
-          "n_estimators"      : [10,20,30, 50],
+          "n_estimators" : [10,20,30, 50],
           'max_depth': [4, 5, 6],
           'min_child_weight': [11],
           }
@@ -415,9 +424,30 @@ estimator, score_, params_ = Grid_Search_CV_RFR(df_X, df_y)
 #plot importance
 plot_features(estimator)
 
+#Modeling
+X_train, X_test, Y_train, Y_test = train_test(hosue_df_catt, split = True, test_siz = 0.3)
 
+def predic_prices(X_train, X_test, Y_train, Y_test):
+  model = XGBRegressor()
+  #parameters
+  param_grid = { 
+          "n_estimators" : [10,20,30, 50],
+          'max_depth': [4, 5, 6],
+          'min_child_weight': [11],
+          }
 
+  grid = GridSearchCV(model, param_grid,
+                      cv=StratifiedKFold(Y_train, n_folds=10, shuffle=True),
+                      n_jobs=-1)
 
+  grid.fit(X_train, Y_train)
+  prediction = grid.predict(X_test)
+  return prediction
+
+predicted = predic_prices(X_train, X_test, Y_train, Y_test)
+
+plt.plot(np.arange(predicted.shape[0]), predicted)
+plt.plot(np.arange(predicted.shape[0]), Y_test)
 
 
 

@@ -182,7 +182,7 @@ def remove_outliers(df, standardize = None, remove_objects = True,
         df = df.drop(ii, axis = 1)
   else:
     df = df
-    dum = pd.get_dummies(df, dtype = float)
+    df = pd.get_dummies(df, dtype = float)
     
     
     
@@ -288,9 +288,10 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.grid_search import GridSearchCV
 
 #plot feature importance
-def plot_features():
+def plot_features(model):
+  figsize = [20, 16]
   fig, ax = plt.subplots(1, 1, figsize = figsize)
-  return plot_importance()
+  return plot_importance(model)
 
 
 def categorical_handler(df, standardize = None, remove_objects = True,
@@ -388,31 +389,39 @@ def standize_it(df):
 #standardize dataset
 hosue_df_catt_st = standize_it(hosue_df_catt)
 #parameters
-parameters = {'nthread':[4], #when use hyperthread, xgboost may become slower
-              'objective':['binary:logistic'],
-              'learning_rate': [0.05], #so called `eta` value
-              'max_depth': [6],
-              'min_child_weight': [11],
-              'silent': [1],
-              'subsample': [0.8],
-              'colsample_bytree': [0.7],
-              'n_estimators': [5], #number of trees, change it to 1000 for better results
-              'missing':[-999],
-              'seed': [1337]}
-#call XGBoost Model
-model = XGBRegressor()
-df_y = hosue_df_catt_st.price
+
+#features and targets
+df_y = hosue_df_catt_st.price.values
 df_X = hosue_df_catt_st.iloc[:, 1:]
 
-#perform Gridsearch on dataset
-clf = GridSearchCV(model, parameters, n_jobs=5, 
-                   cv=StratifiedKFold(df_y, n_folds=5, shuffle=True), 
-                   scoring='roc_auc',
-                   verbose=2, refit=True)
+def Grid_Search_CV_RFR(X_train, y_train):
 
-model.fit(df_X, df_y)
+  model = XGBRegressor()
+  param_grid = { 
+          "n_estimators"      : [10,20,30, 50],
+          'max_depth': [4, 5, 6],
+          'min_child_weight': [11],
+          }
 
-plot_importance(model)
+  grid = GridSearchCV(model, param_grid,
+                      cv=StratifiedKFold(df_y, n_folds=5, shuffle=True),
+                      n_jobs=-1)
+
+  grid.fit(df_X, df_y)
+  return grid.best_estimator_, grid.best_score_ , grid.best_params_
+
+estimator, score_, params_ = Grid_Search_CV_RFR(df_X, df_y)
+
+#plot importance
+plot_features(estimator)
+
+
+
+
+
+
+
+
 
 
 

@@ -170,7 +170,7 @@ ma_log_plot = pd.concat([ma_log, log_data.price], axis = 1)
 ma_log_plot.plot()
 
 def plot_ma(df, n):
-  ma_perd = moving_av(df.price, 6)
+  ma_perd = moving_av(df.price, n)
   fig, (ax1, ax2) = plt.subplots(2, 1, sharex= True)
   ax1.plot(df.index, df.price, lw = .5, color = color[1], label = 'Price')
   ax1.legend()
@@ -178,7 +178,36 @@ def plot_ma(df, n):
   ax2.legend()
   plt.title(str(n)+' day_Moving Average')
   
-plot_ma(log_data, 6)
+def plot_ma_all(df, n):
+  ma = []
+  for ii in n:
+    ma.append(moving_av(df.price, ii))
+  fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(7, 1, sharex= True)
+  ax1.plot(df.index, df.price, lw = .5, color = color[1], label = 'Price')
+  ax1.legend()
+  ax1.set_title('Price')
+  ax2.plot(df.index, ma[0], lw = .5, color = color[2], label = str(30)+'day_MA')
+  ax2.legend()
+  ax2.set_title(str(30)+' day_Moving Average')
+  ax3.plot(df.index, ma[1], lw = .5, color = color[2], label = str(60)+'day_MA')
+  ax3.legend()
+  ax3.set_title(str(60)+' day_Moving Average')
+  ax4.plot(df.index, ma[2], lw = .5, color = color[2], label = str(120)+'day_MA')
+  ax4.legend()
+  ax4.set_title(str(120)+' day_Moving Average')
+  ax5.plot(df.index, ma[3], lw = .5, color = color[2], label = str(240)+'day_MA')
+  ax5.legend()
+  ax5.set_title(str(240)+' day_Moving Average')
+  ax6.plot(df.index, ma[4], lw = .5, color = color[2], label = str(360)+'day_MA')
+  ax6.legend()
+  ax6.set_title(str(360)+' day_Moving Average')
+  ax7.plot(df.index, ma[5], lw = .5, color = color[2], label = str(730)+'day_MA')
+  ax7.legend()
+  ax7.set_title(str(730)+' day_Moving Average')
+  
+  
+plot_ma(log_data, 730)
+plot_ma_all(log_data, [30, 60, 120, 240, 365, 730])
 #------------------------------
 ema_log = expmoving_av(log_data.price, 2)
 

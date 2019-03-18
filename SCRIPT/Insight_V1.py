@@ -149,7 +149,7 @@ def moving_av(df, n):
     :df: feature, can be price, area or any numerical value 
     :n: period we want to check price
   '''
-  return pd.DataFrame({'MA_'+str(n): df.rolling(n).mean()})
+  return pd.DataFrame({str(n)+'_day_average': df.rolling(n).mean()})
 
 def expmoving_av(df, n):
   '''
@@ -160,11 +160,26 @@ def expmoving_av(df, n):
   return pd.DataFrame({'MA_'+str(n): df.ewm(n).mean()})
 
 
-ma = moving_av(df.price, 2)
-ema = expmoving_av(df.price, 2)
-
+ma = moving_av(hosue_df.price, 6)
+ema = expmoving_av(hosue_df.price, 6)
+ma_plot = pd.concat([ma, hosue_df.price], axis = 1)
+ma_plot.plot()
+#----------------
 ma_log = moving_av(log_data.price, 6)
-ma_log.plot()
+ma_log_plot = pd.concat([ma_log, log_data.price], axis = 1)
+ma_log_plot.plot()
+
+def plot_ma(df, n):
+  ma_perd = moving_av(df.price, 6)
+  fig, (ax1, ax2) = plt.subplots(2, 1, sharex= True)
+  ax1.plot(df.index, df.price, lw = .5, color = color[1], label = 'Price')
+  ax1.legend()
+  ax2.plot(df.index, ma_perd, lw = .5, color = color[2], label = str(n)+'day_MA')
+  ax2.legend()
+  plt.title(str(n)+' day_Moving Average')
+  
+plot_ma(log_data, 6)
+#------------------------------
 ema_log = expmoving_av(log_data.price, 2)
 
 sns.lmplot('area', 'price', log_data)
@@ -456,9 +471,10 @@ plt.plot(np.arange(predicted.shape[0]), Y_test)
 
 
 
+sns.countplot(x = 'type', data = hosue_df)
+plt.title('Count of types')
 
-
-
-
+sns.countplot(x = 'user_type', data = hosue_df, hue = 'living_room')
+plt.title('user_type court on living room')
 
 

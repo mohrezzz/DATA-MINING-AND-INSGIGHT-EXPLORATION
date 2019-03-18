@@ -163,7 +163,9 @@ def expmoving_av(df, n):
 ma = moving_av(df.price, 2)
 ema = expmoving_av(df.price, 2)
 
-ma_log = moving_av(df.price, 2)
+ma_log = moving_av(log_data.price, 6)
+ma_log.plot()
+ema_log = expmoving_av(log_data.price, 2)
 
 sns.lmplot('area', 'price', log_data)
 plt.scatter(df.iloc[:, [3]], df.iloc[:, [0]], s = .5)
@@ -413,7 +415,7 @@ def Grid_Search_CV_RFR(X_train, y_train):
           }
 
   grid = GridSearchCV(model, param_grid,
-                      cv=StratifiedKFold(df_y, n_folds=5, shuffle=True),
+                      cv=StratifiedKFold(df_y, n_folds=10, shuffle=True),
                       n_jobs=-1)
 
   grid.fit(df_X, df_y)
@@ -424,6 +426,7 @@ estimator, score_, params_ = Grid_Search_CV_RFR(df_X, df_y)
 #plot importance
 plot_features(estimator)
 
+#%% MODELING 
 #Modeling
 X_train, X_test, Y_train, Y_test = train_test(hosue_df_catt, split = True, test_siz = 0.3)
 

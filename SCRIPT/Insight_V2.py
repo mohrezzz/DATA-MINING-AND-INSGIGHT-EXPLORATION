@@ -106,6 +106,25 @@ plt.title('Plot of count against price on a log scale')
 #plt.axhline(y = 2.5, linewidth=1, color='r')
 #plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
 
+#%% plots and correlation
+
+df_standard.hist()
+log_data.hist()
+df_normal.hist()
+
+
+#%% 
+sns.violinplot(df_standard)
+sns.pairplot(df_standard)
+sns.pairplot(log_data)
+sns.pairplot(df_normal)
+sns.heatmap(df_standard)
+sns.heatmap(log_data)
+sns.heatmap(df_normal)
+sns.heatmap(hosue_df.corr(), annot=True);plt.show()
+sns.heatmap(df_standard.corr(), annot=True);plt.show()
+sns.heatmap(log_data.corr(), annot=True);plt.show()
+sns.heatmap(df_normal.corr(), annot=True);plt.show()
 #%% DEALING WITH OUTLIERS
 
 def remove_outliers(df, standardize = None, remove_objects = True,
@@ -182,3 +201,74 @@ df_standard_no_out = remove_outliers(hosue_df, remove_objects = True, standardiz
 log_data_no_out = remove_outliers(hosue_df, remove_objects = True, logg=True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 df_normal_no_out = remove_outliers(hosue_df, remove_objects = True, normalize = True, lower_quartile = lower_quart, upper_quartile = upper_quart, multiplier = multiplier)
 
+#%%
+from scipy import stats
+from xgboost import XGBRegressor
+from xgboost import plot_importance
+from sklearn.cross_validation import StratifiedKFold, KFold
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.grid_search import GridSearchCV
+
+#plot feature importance
+def plot_features(model):
+  figsize = [20, 16]
+  fig, ax = plt.subplots(1, 1, figsize = figsize)
+  return plot_importance(model)
+
+
+def train_test(df, split = None, test_siz = None):
+  if not split:
+    return df.Price.values, df.drop(['Price'], axis = 1)
+  else:
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, Y_train, Y_test = train_test_split(df.drop(['Price'], axis = 1), df.price.values, test_size = test_siz)
+#    X_train, X_test = standize_it(X_train), standize_it(X_test)
+    return X_train, X_test, Y_train, Y_test
+
+df_y, df_X = train_test(df_standard_no_out)
+
+
+def Grid_Search_CV_RFR(X_train, y_train):
+  #model
+  model = XGBRegressor()
+  #parameters
+  param_grid = { 
+          "n_estimators" : [10,20,30, 50],
+          'max_depth': [4, 5, 6],
+          'min_child_weight': [11],
+          }
+
+  grid = GridSearchCV(model, param_grid,
+                      cv=StratifiedKFold(df_y, n_folds=10, shuffle=True),
+                      n_jobs=-1)
+
+  grid.fit(df_X, df_y)
+  return grid.best_estimator_, grid.best_score_ , grid.best_params_
+
+estimator, score_, params_ = Grid_Search_CV_RFR(df_X, df_y)
+
+#plot importance
+plot_features(estimator)
+
+#%% MODELING 
+#Modeling
+X_train, X_test, Y_train, Y_test = train_test(df_standard, split = True, test_siz = 0.3)
+
+def predic_prices(X_train, X_test, Y_train, Y_test):
+  model = XGBRegressor()
+  #parameters
+  param_grid = { 
+          "n_estimators" : [10,20,30, 50],
+          'max_depth': [4, 5, 6],
+          'min_child_weight': [11],
+          }
+
+  grid = GridSearchCV(model, param_grid,
+                      cv=StratifiedKFold(Y_train, n_folds=10, shuffle=True),
+                      n_jobs=-1)
+
+  grid.fit(X_train, Y_train)
+  prediction = grid.predict(X_test)
+  return prediction
+
+predicted = predic_prices(X_train, X_test, Y_train, Y_test)

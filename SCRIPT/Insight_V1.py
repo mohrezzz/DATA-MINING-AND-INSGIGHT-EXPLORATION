@@ -8,16 +8,19 @@ Created on Thu Feb 28 11:57:52 2019
 import pandas as pd
 import numpy as np
 import os
+from os.path import dirname, join
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pylab import rcParams
 #stop runtime error
 np.seterr(divide='ignore', invalid='ignore')
 rcParams['figure.figsize'] = 20, 25
+__FILE__ = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES\\' #e.g D:\\Gulsha_Salmut\\ ensure it ends with \\
+DATASET_ = join(dirname(__FILE__), 'DATASET')
 
-path = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES'
-os.chdir(path)
-hosue_df = pd.read_csv(os.path.join('DATASET', 'Al-Muzahmiyya.csv'))
+hosue_df = pd.read_csv(os.path.join(DATASET_, 'Villas For Sale.csv'))
+#drop na values
+
 hosue_df['last_updated'] = pd.to_datetime(hosue_df.last_updated)
 hosue_df = hosue_df.iloc[:, 1:]
 hosue_df = hosue_df.drop(['created_at', 'address'], axis = 1)
@@ -298,18 +301,19 @@ sns.lmplot('area', 'price', df_no_out)
 #%% plots with and without outliers
 #plot log_price
 rcParams['figure.figsize'] = 20, 14
-plt.scatter(np.arange(log_data_no_out.shape[0]), log_data_no_out.price, s = 2.5)
+plt.scatter(np.arange(log_data_no_out.shape[0]), log_data_no_out.price, s = 2.5, label = 'data without outlier')
 plt.title('Plot of count against price on a log scale without outliers')
 plt.axhline(y = 20, linewidth=1, color='r')
 plt.axhline(y = 2.5, linewidth=1, color='r')
 plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
 
 ##plot log_price  using price range
-plt.scatter(np.arange(after_outl.shape[0]), after_outl.price, s = 2.5)
+plt.scatter(np.arange(log_data.shape[0]), log_data.price, s = 2.5, label = 'data with outlier')
 plt.title('Plot of count against price on a log scale with outliers')
 plt.axhline(y = 20, linewidth=1, color='r')
 plt.axhline(y = 2.5, linewidth=1, color='r')
 plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
+plt.legend()
 
 #%% plot price with all other numeric features
 
@@ -326,7 +330,6 @@ plotit(df_no_out)
 #%% Feature engineering/ selection
 from scipy import stats
 from xgboost import XGBRegressor
-from xgboost import XGBClassifier
 from xgboost import plot_importance
 from sklearn.cross_validation import StratifiedKFold, KFold
 from sklearn.tree import DecisionTreeRegressor
@@ -409,11 +412,11 @@ df_normal_no_out = categorical_handler(hosue_df, remove_objects = True, normaliz
 pt = sns.countplot(x = 'living_room', data = hosue_df, hue = 'user_type')
 plt.xticks(rotation=30)
 #barplot
-sns.barplot(x="living_room", y = "price", data=hosue_df)
+sns.barplot(x="type", y = "price", data=hosue_df)
 plt.title('Price Against Living room')
 #%% Analysis and Modeling
 
-def standize_it(df):
+def standize_it(df, stand = None, log = None):
   df = df.copy(deep = True)
   def stdev(df):
     return np.std(df, axis = 0)
@@ -425,15 +428,20 @@ def standize_it(df):
     return np.log(df)
   
   #standardized values for columns
-  for ii, ij in enumerate(df.columns):
-    print(ii, ij)
-    df['{}'.format(ij)] = mean_dev(df.loc[:, '{}'.format(ij)])/stdev(df.loc[:, '{}'.format(ij)])
+  if stand:
+    for ii, ij in enumerate(df.columns):
+      print(ii, ij)
+      df['{}'.format(ij)] = mean_dev(df.loc[:, '{}'.format(ij)])/stdev(df.loc[:, '{}'.format(ij)])
+      df = df.replace([np.inf, -np.inf, np.nan], 0)
+  elif log:
+    df = logg_dat(df)
     df = df.replace([np.inf, -np.inf, np.nan], 0)
   return df
 
 hosue_df_catt = pd.get_dummies(hosue_df)
 #standardize dataset
-hosue_df_catt_st = standize_it(hosue_df_catt)
+hosue_df_catt_st = standize_it(hosue_df_catt, stand=True)
+hosue_df_catt_log = standize_it(hosue_df_catt, log=True)
 #parameters
 
 def train_test(df, split = None, test_siz = None):
@@ -445,7 +453,7 @@ def train_test(df, split = None, test_siz = None):
     X_train, X_test = standize_it(X_train), standize_it(X_test)
     return X_train, X_test, Y_train, Y_test
 
-df_y, df_X = train_test(log_data_no_out)
+df_y, df_X = train_test(hosue_df_catt_log)
 
 
 def Grid_Search_CV_RFR(X_train, y_train):

@@ -15,10 +15,10 @@ from pylab import rcParams
 #stop runtime error
 np.seterr(divide='ignore', invalid='ignore')
 rcParams['figure.figsize'] = 20, 25
-__FILE__ = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES\\' 
+__FILE__ = '/home/kenneth/Documents/GIT_PROJECTS/DATA-MINING-AND-INSGIGHT-EXPLORATION/' 
 DATASET_ = join(dirname(__FILE__), 'DATASET')
 
-hosue_df = pd.read_csv(os.path.join(DATASET_, 'Villas For Sale.csv'))
+hosue_df = pd.read_csv(join(DATASET_, 'Villas For Sale.csv'))
 #drop na values
 hosue_df.dropna(inplace = True)
 if 'Create Time' in hosue_df.columns:
@@ -101,13 +101,16 @@ log_data.describe()
 #plot log_price
 #after_outl = log_data[(log_data.price < 20.0) & (log_data.price > 2.5)]
 plt.scatter(np.arange(log_data.shape[0]), log_data.Price, s = .5)
+#plt.axhline(y = .08e13, linewidth=1, color='r')
 plt.title('Plot of count against price on a log scale')
 #plt.axhline(y = 20, linewidth=1, color='r')
 #plt.axhline(y = 2.5, linewidth=1, color='r')
 #plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
+#%%
 
+log_data.plot(kind='box')
 #%% plots and correlation
-
+hosue_df.hist()
 df_standard.hist()
 log_data.hist()
 df_normal.hist()
@@ -125,6 +128,17 @@ sns.heatmap(hosue_df.corr(), annot=True);plt.show()
 sns.heatmap(df_standard.corr(), annot=True);plt.show()
 sns.heatmap(log_data.corr(), annot=True);plt.show()
 sns.heatmap(df_normal.corr(), annot=True);plt.show()
+
+#%%
+x = 'Lift'
+sns.countplot(x = x, data = hosue_df)
+plt.title('Count of %s'%x)
+
+x = 'Car Entrance'
+y = 'Lift'
+sns.countplot(x = x, data = hosue_df, hue = y)
+plt.title('%s count vs %s'%(x, y))
+
 #%% DEALING WITH OUTLIERS
 
 def remove_outliers(df, standardize = None, remove_objects = True,

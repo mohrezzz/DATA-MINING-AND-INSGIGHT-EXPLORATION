@@ -100,9 +100,9 @@ df_normal = standardize_houseprize(hosue_df, normalize = True)
 log_data.describe()
 #plot log_price
 #after_outl = log_data[(log_data.price < 20.0) & (log_data.price > 2.5)]
-plt.scatter(np.arange(log_data.shape[0]), log_data.Price, s = .5)
+plt.scatter(np.arange(df_standard.shape[0]), df_standard.Price, s = .5)
 #plt.axhline(y = .08e13, linewidth=1, color='r')
-plt.title('Plot of count against price on a log scale')
+plt.title('Plot of count against price on a standardized scale')
 #plt.axhline(y = 20, linewidth=1, color='r')
 #plt.axhline(y = 2.5, linewidth=1, color='r')
 #plt.axhline(y = 12.159753818376581, linewidth=1, color='r')
@@ -134,11 +134,132 @@ x = 'Lift'
 sns.countplot(x = x, data = hosue_df)
 plt.title('Count of %s'%x)
 
-x = 'Car Entrance'
-y = 'Lift'
+x = 'Basement'
+y = 'With Stairs'
 sns.countplot(x = x, data = hosue_df, hue = y)
 plt.title('%s count vs %s'%(x, y))
 
+#%%
+
+df_standard.plot(kind='box')
+plt.title('log data contaning outliers')
+
+#data exploration
+color = ['red', 'green', 'brown', 'black', 'blue', 'indigo']
+
+
+#%%
+def moving_av(df, n):
+  '''
+  :params
+    :df: feature, can be price, area or any numerical value 
+    :n: period we want to check price
+  '''
+  return pd.DataFrame({str(n)+'_day_average': df.rolling(n).mean()})
+
+def expmoving_av(df, n):
+  '''
+  :params
+    :df: feature, can be price, area or any numerical value 
+    :n: period we want to check price
+  '''
+  return pd.DataFrame({'MA_'+str(n): df.ewm(n).mean()})
+
+
+ma = moving_av(hosue_df.Price, 6)
+ema = expmoving_av(hosue_df.Price, 6)
+ma_plot = pd.concat([ma, hosue_df.Price], axis = 1)
+ma_plot.plot()
+#----------------
+ma_log = moving_av(log_data.price, 6)
+ma_log_plot = pd.concat([ma_log, log_data.price], axis = 1)
+ma_log_plot.plot()
+
+def plot_ma(df, n):
+  ma_perd = moving_av(df.Price, n)
+  fig, (ax1, ax2) = plt.subplots(2, 1, sharex= True)
+  ax1.plot(df.index, df.Price, lw = .5, color = color[1], label = 'Price')
+  ax1.legend()
+  ax2.plot(df.index, ma_perd, lw = .5, color = color[2], label = str(n)+'day_MA')
+  ax2.legend()
+  plt.title(str(n)+' day_Moving Average')
+  
+def plot_ma_all(df, n):
+  ma = []
+  for ii in n:
+    ma.append(moving_av(df.Price, ii))
+  fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(7, 1, sharex= True)
+  ax1.plot(df.index, df.Price, lw = .5, color = color[1], label = 'Price')
+  ax1.legend()
+  ax1.set_title('Price')
+  ax2.plot(df.index, ma[0], lw = .5, color = color[2], label = str(30)+'day_MA')
+  ax2.legend()
+  ax2.set_title(str(30)+' day_Moving Average')
+  ax3.plot(df.index, ma[1], lw = .5, color = color[2], label = str(60)+'day_MA')
+  ax3.legend()
+  ax3.set_title(str(60)+' day_Moving Average')
+  ax4.plot(df.index, ma[2], lw = .5, color = color[2], label = str(120)+'day_MA')
+  ax4.legend()
+  ax4.set_title(str(120)+' day_Moving Average')
+  ax5.plot(df.index, ma[3], lw = .5, color = color[2], label = str(240)+'day_MA')
+  ax5.legend()
+  ax5.set_title(str(240)+' day_Moving Average')
+  ax6.plot(df.index, ma[4], lw = .5, color = color[2], label = str(360)+'day_MA')
+  ax6.legend()
+  ax6.set_title(str(365)+' day_Moving Average')
+  ax7.plot(df.index, ma[5], lw = .5, color = color[2], label = str(730)+'day_MA')
+  ax7.legend()
+  ax7.set_title(str(730)+' day_Moving Average')
+  
+  
+plot_ma(log_data, 730)
+plot_ma_all(log_data, [30, 60, 120, 240, 365, 730])
+#------------------------------
+ema_log = expmoving_av(log_data.price, 2)
+
+sns.lmplot('area', 'price', log_data)
+plt.scatter(df.iloc[:, [3]], df.iloc[:, [0]], s = .5)
+
+#%% MACD
+
+def ema(df, n):
+  '''
+  :params
+    :df: feature, can be price, area or any numerical value 
+    :n: duration we want to check price
+  '''
+  return df.ewm(n).mean()
+def MACD(price, n_fast, n_slow, signal):
+    '''
+    :Arguments:
+      :n_fast: <integer> representing fast exponential
+              moving average
+              
+      :n_slow: <integer> representing slow exponential
+              moving average
+              
+      :signal: Signal line
+      
+    :Return:
+      MACD: fast, slow and signal.
+    '''
+    
+    n_fast = n_fast
+    n_slow = n_slow
+    signal = signal
+    #defin MACD
+    macd = ema(price, n_fast) - ema(price, n_slow)
+    #MACD signal
+    macd_signal = ema(macd, signal)
+    #MACD histo
+    macd_histo_ = macd - macd_signal
+    return pd.DataFrame({'MACD': macd, 'MACD_HIST': macd_histo_,
+                         'MACD_SIGNAL': macd_signal})
+
+FAST = 365
+SLOW = 765
+SIGNAL = 9
+macd = MACD(log_data.Price, FAST, SLOW, SIGNAL)
 #%% DEALING WITH OUTLIERS
 
 def remove_outliers(df, standardize = None, remove_objects = True,

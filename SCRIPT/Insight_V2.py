@@ -100,7 +100,7 @@ df_normal = standardize_houseprize(hosue_df, normalize = True)
 log_data.describe()
 #plot log_price
 #after_outl = log_data[(log_data.price < 20.0) & (log_data.price > 2.5)]
-plt.scatter(np.arange(df_standard.shape[0]), df_standard.Price, s = .5)
+plt.scatter(np.arange(df_standard_no_out.shape[0]), df_standard_no_out.Price, s = .5)
 #plt.axhline(y = .08e13, linewidth=1, color='r')
 plt.title('Plot of count against price on a standardized scale')
 #plt.axhline(y = 20, linewidth=1, color='r')
@@ -340,9 +340,9 @@ df_normal_no_out = remove_outliers(hosue_df, remove_objects = True, normalize = 
 from scipy import stats
 from xgboost import XGBRegressor
 from xgboost import plot_importance
-from sklearn.cross_validation import StratifiedKFold, KFold
+from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
 #plot feature importance
 def plot_features(model):
@@ -374,7 +374,7 @@ def Grid_Search_CV_RFR(X_train, y_train):
           }
 
   grid = GridSearchCV(model, param_grid,
-                      cv=StratifiedKFold(df_y, n_folds=10, shuffle=True),
+                      cv=StratifiedKFold(df_y, n_splits=10, shuffle=True),
                       n_jobs=-1)
 
   grid.fit(df_X, df_y)

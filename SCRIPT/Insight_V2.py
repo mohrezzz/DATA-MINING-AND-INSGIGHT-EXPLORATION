@@ -7,7 +7,6 @@ Created on Thu Mar 28 14:16:26 2019
 
 import pandas as pd
 import numpy as np
-import os
 from os.path import dirname, join
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -100,7 +99,7 @@ df_normal = standardize_houseprize(hosue_df, normalize = True)
 log_data.describe()
 #plot log_price
 #after_outl = log_data[(log_data.price < 20.0) & (log_data.price > 2.5)]
-plt.scatter(np.arange(df_standard_no_out.shape[0]), df_standard_no_out.Price, s = .5)
+plt.scatter(np.arange(df_standard.shape[0]), df_standard.Price, s = .5)
 #plt.axhline(y = .08e13, linewidth=1, color='r')
 plt.title('Plot of count against price on a standardized scale')
 #plt.axhline(y = 20, linewidth=1, color='r')
@@ -130,12 +129,12 @@ sns.heatmap(log_data.corr(), annot=True);plt.show()
 sns.heatmap(df_normal.corr(), annot=True);plt.show()
 
 #%%
-x = 'Lift'
+x = 'District_id'
 sns.countplot(x = x, data = hosue_df)
 plt.title('Count of %s'%x)
 
-x = 'Basement'
-y = 'With Stairs'
+x = 'District_id'
+y = 'Living Rooms'
 sns.countplot(x = x, data = hosue_df, hue = y)
 plt.title('%s count vs %s'%(x, y))
 

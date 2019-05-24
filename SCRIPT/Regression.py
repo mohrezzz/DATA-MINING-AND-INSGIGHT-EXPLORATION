@@ -335,7 +335,7 @@ beta,cost_rec, yhat, stopping = stgrad.StochGD(X, Y, beta = np.zeros(X.shape[1])
 stgrad.summary(X, Y, yhat)
 stgrad.plot_cost(cost_rec, stopping)
 
-#--stochastic gradient descent
+#--minibatch gradient descent
 minibatch = MinibatchGradientDescent()
 beta,cost_rec, yhat, stopping = minibatch.minbatchGD(X, Y, beta = np.zeros(X.shape[1]).reshape(-1, 1), alpha = 0.01, iterations = iterations, batch_size = 20, early_stopping=True)
 minibatch.summary(X, Y, yhat)

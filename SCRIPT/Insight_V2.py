@@ -134,7 +134,7 @@ sns.countplot(x = x, data = hosue_df)
 plt.title('Count of %s'%x)
 
 x = 'District_id'
-y = 'Living Rooms'
+y = 'Pool'
 sns.countplot(x = x, data = hosue_df, hue = y)
 plt.title('%s count vs %s'%(x, y))
 
@@ -342,12 +342,14 @@ from xgboost import plot_importance
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import GridSearchCV
+import warnings
+warnings.filterwarnings("ignore")
 
 #plot feature importance
-def plot_features(model):
-  figsize = [20, 16]
-  fig, ax = plt.subplots(1, 1, figsize = figsize)
-  return plot_importance(model)
+#def plot_features(model):
+#  figsize = [20, 16]
+#  fig, ax = plt.subplots(1, 1, figsize = figsize)
+#  return plot_importance(model)
 
 
 def train_test(df, split = None, test_siz = None):
@@ -359,7 +361,7 @@ def train_test(df, split = None, test_siz = None):
 #    X_train, X_test = standize_it(X_train), standize_it(X_test)
     return X_train, X_test, Y_train, Y_test
 
-df_y, df_X = train_test(df_standard_no_out)
+df_y, df_X = train_test(df_standard)
 
 
 def Grid_Search_CV_RFR(X_train, y_train):
@@ -373,16 +375,16 @@ def Grid_Search_CV_RFR(X_train, y_train):
           }
 
   grid = GridSearchCV(model, param_grid,
-                      cv=StratifiedKFold(df_y, n_splits=10, shuffle=True),
+                      cv=KFold(n_splits=10, shuffle=True),
                       n_jobs=-1)
 
-  grid.fit(df_X, df_y)
+  grid.fit(X_train, y_train)
   return grid.best_estimator_, grid.best_score_ , grid.best_params_
 
 estimator, score_, params_ = Grid_Search_CV_RFR(df_X, df_y)
 
 #plot importance
-plot_features(estimator)
+plot_importance(estimator)
 
 #%% MODELING 
 #Modeling

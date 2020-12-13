@@ -15,7 +15,7 @@ from pylab import rcParams
 #stop runtime error
 np.seterr(divide='ignore', invalid='ignore')
 rcParams['figure.figsize'] = 20, 25
-__FILE__ = 'D:\\FREELANCER\\DATAMINING AND INSIGHTHOUSE PRICES\\' #e.g D:\\Gulsha_Salmut\\ ensure it ends with \\
+__FILE__ = 'C:/Users/mohammadreze/Documents/GitHub/DATA-MINING-AND-INSGIGHT-EXPLORATION/' #e.g D:\\Gulsha_Salmut\\ ensure it ends with \\
 DATASET_ = join(dirname(__FILE__), 'DATASET')
 
 hosue_df = pd.read_csv(os.path.join(DATASET_, 'Villas For Sale.csv'))
